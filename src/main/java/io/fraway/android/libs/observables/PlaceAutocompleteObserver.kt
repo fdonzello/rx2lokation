@@ -1,8 +1,8 @@
 package io.fraway.android.libs.observables
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.location.Geocoder
-import android.support.v7.app.AppCompatActivity
 import com.google.android.gms.maps.model.LatLng
 import io.fraway.android.libs.models.RichLocation
 import io.reactivex.ObservableEmitter
@@ -10,12 +10,17 @@ import io.reactivex.ObservableEmitter
 /**
  * @author Francesco Donzello <francesco.donzello@gmail.com>
  */
-class PlaceAutocompleteObserver(private val ctx: AppCompatActivity, private var query: String) : BaseObservable<List<RichLocation>>(ctx) {
+class PlaceAutocompleteObserver(private val activity: Activity, private var query: String) : BaseObservable<List<RichLocation>>() {
 
     @SuppressLint("MissingPermission")
     override fun run(e: ObservableEmitter<List<RichLocation>>) {
-        val query = String.format("%s, %s", query)
-        val addresses = Geocoder(ctx).getFromLocationName(query, 3)
+
+        if (query.isEmpty()) {
+            return
+        }
+
+        val query = String.format("%s", query)
+        val addresses = Geocoder(activity).getFromLocationName(query, 3)
         val locations = ArrayList<RichLocation>()
         for (address in addresses) {
             var addressName = ""

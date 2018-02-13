@@ -1,2 +1,4 @@
 # rx2lokation
-Android Kotlin library to get Location through Rx2
+Reactive Android Kotlin library that provides common Location based apis.
+
+

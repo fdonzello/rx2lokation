@@ -1,12 +1,10 @@
 package io.fraway.android.libs.models
 
-import com.google.android.gms.maps.model.LatLng
-
 /**
  * @author Francesco Donzello <francesco.donzello@gmail.com>
  */
-class RichLocation(val latLng: LatLng, val text: String) {
+data class RichLocation(val lat: Double, val lng: Double, val address: String, val city: String) {
     override fun toString(): String {
-        return text
+        return address
     }
 }

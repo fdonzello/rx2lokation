@@ -6,7 +6,6 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
-import com.google.android.gms.maps.model.LatLng
 import io.fraway.android.libs.models.RichLocation
 import io.reactivex.ObservableEmitter
 
@@ -29,7 +28,7 @@ class LocationUpdatesObserver(ctx: Context, private var request: LocationRequest
 
             val richLocations: ArrayList<RichLocation> = ArrayList()
             result!!.locations.mapTo(richLocations) {
-                RichLocation(LatLng(it.latitude, it.longitude), "")
+                RichLocation(it.latitude, it.longitude, "", "")
             }
 
             e.onNext(richLocations)

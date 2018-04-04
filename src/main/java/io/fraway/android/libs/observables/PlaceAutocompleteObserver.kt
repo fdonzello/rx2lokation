@@ -3,7 +3,6 @@ package io.fraway.android.libs.observables
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.location.Geocoder
-import com.google.android.gms.maps.model.LatLng
 import io.fraway.android.libs.models.RichLocation
 import io.reactivex.ObservableEmitter
 
@@ -29,7 +28,7 @@ class PlaceAutocompleteObserver(private val activity: Activity, private var quer
                     addressName += address.getAddressLine(i) + " "
                 }
             }
-            locations.add(RichLocation(LatLng(address.latitude, address.longitude), addressName))
+            locations.add(RichLocation(address.latitude, address.longitude, addressName, "")) // TODO
         }
 
         e.onNext(locations)

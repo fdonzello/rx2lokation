@@ -7,7 +7,6 @@ import android.location.Geocoder
 import android.os.Handler
 import android.os.Looper
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.maps.model.LatLng
 import com.tbruyelle.rxpermissions2.RxPermissions
 import io.fraway.android.libs.exceptions.NullLocationException
 import io.fraway.android.libs.models.RichLocation
@@ -24,14 +23,17 @@ class LastKnownLocationObserver(private var activity: Activity) : BaseObservable
             // need permission checks
             RxPermissions(activity)
                     .request(Manifest.permission.ACCESS_COARSE_LOCATION)
-                    .filter({ a -> a })
                     .subscribe({ granted ->
                         if (granted) {
                             start(e)
                         } else {
                             e.onError(SecurityException("Permission has not been granted."))
                         }
-                    })
+                    },
+                            {
+                                e.onError(SecurityException("Permission has not been granted."))
+                            }
+                    )
         })
 
     }
@@ -50,12 +52,21 @@ class LastKnownLocationObserver(private var activity: Activity) : BaseObservable
 
                         val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
                         var name = ""
+                        var address = ""
                         if (results.isNotEmpty()) {
                             name = results[0].locality
+                            if (results[0].thoroughfare.isNotEmpty()) {
+                                address = results[0].thoroughfare
+                            } else if (results[0].postalCode.isNotEmpty()) {
+                                address = results[0].postalCode
+                            }
                         }
 
+
                         e.onNext(RichLocation(
-                                LatLng(location.latitude, location.longitude),
+                                location.latitude,
+                                location.longitude,
+                                address,
                                 name
                         ))
                     } else {

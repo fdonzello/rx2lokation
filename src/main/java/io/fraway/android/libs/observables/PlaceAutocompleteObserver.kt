@@ -21,14 +21,8 @@ class PlaceAutocompleteObserver(private val activity: Activity, private var quer
         val query = String.format("%s", query)
         val addresses = Geocoder(activity).getFromLocationName(query, 3)
         val locations = ArrayList<RichLocation>()
-        for (address in addresses) {
-            var addressName = ""
-            if (address.maxAddressLineIndex != -1) {
-                for (i in 0..address.maxAddressLineIndex) {
-                    addressName += address.getAddressLine(i) + " "
-                }
-            }
-            locations.add(RichLocation(address.latitude, address.longitude, addressName, "")) // TODO
+        addresses.forEach {
+            locations.add(RichLocation.fromAddress(it))
         }
 
         e.onNext(locations)

@@ -22,16 +22,19 @@ class LocationUpdatesObserver(ctx: Context, private var request: LocationRequest
                 return
             }
 
-            if (result?.locations?.size == 0) {
-                return
+            result?.let {
+                if (it.locations.isEmpty()) {
+                    return
+                }
+
+                val richLocations: ArrayList<RichLocation> = ArrayList()
+                it.locations.mapTo(richLocations) {
+                    RichLocation(it.latitude, it.longitude, "", "", null, null)
+                }
+
+                e.onNext(richLocations)
             }
 
-            val richLocations: ArrayList<RichLocation> = ArrayList()
-            result!!.locations.mapTo(richLocations) {
-                RichLocation(it.latitude, it.longitude, "", "")
-            }
-
-            e.onNext(richLocations)
         }
     }
 

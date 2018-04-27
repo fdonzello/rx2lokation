@@ -49,13 +49,11 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
 
     private lateinit var rxLocationProvider: RxLocationProvider
 
-    private lateinit var selectedLocation: RichLocation
+    lateinit var selectedLocation: RichLocation
 
     private var lastLocations: List<RichLocation>? = null
 
     var listener: Listener? = null
-        public set
-
 
     private var skipAutocomplete: Boolean = false
 
@@ -65,7 +63,7 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
         clearFocus()
     }
 
-    fun getActivityLoopingOnContext(): Activity? {
+    private fun getActivityLoopingOnContext(): Activity? {
         var context = context
         while (context is ContextWrapper) {
             if (context is Activity) {

@@ -49,25 +49,20 @@ class LastKnownLocationObserver(private var activity: Activity) : BaseObservable
                     }
 
                     if (location != null) {
-
                         val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                        var name = ""
-                        var address = ""
                         if (results.isNotEmpty()) {
-                            name = results[0].locality
-                            if (results[0].thoroughfare.isNotEmpty()) {
-                                address = results[0].thoroughfare
-                            } else if (results[0].postalCode.isNotEmpty()) {
-                                address = results[0].postalCode
-                            }
+                            e.onNext(RichLocation.fromAddress(results[0]))
+                            return@addOnSuccessListener
                         }
 
 
                         e.onNext(RichLocation(
                                 location.latitude,
                                 location.longitude,
-                                address,
-                                name
+                                "",
+                                "",
+                                null,
+                                null
                         ))
                     } else {
                         e.onError(NullLocationException())

@@ -111,21 +111,29 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
 
                 })
                 .distinctUntilChanged()
-                .debounce(500, TimeUnit.MILLISECONDS)
-                .switchMap<List<RichLocation>> { query ->
-                    rxLocationProvider
-                            .autocompletePlace(query)
-                            .observeOn(AndroidSchedulers.mainThread())
-                }
+                .debounce(200, TimeUnit.MILLISECONDS)
                 .subscribe(
-                        { locations ->
-                            this.lastLocations = locations
-                            setAdapter(LocationSuggestionAdapter(
-                                    context,
-                                    android.R.layout.simple_list_item_1,
-                                    locations.toMutableList()
-                            ))
-                            showDropDown()
+                        { query ->
+
+                            rxLocationProvider
+                                    .autocompletePlace(query)
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe(
+                                            { locations ->
+
+                                                this.lastLocations = locations
+                                                setAdapter(LocationSuggestionAdapter(
+                                                        context,
+                                                        android.R.layout.simple_list_item_1,
+                                                        locations.toMutableList()
+                                                ))
+                                                showDropDown()
+                                            },
+                                            {
+                                                it.printStackTrace()
+                                            }
+                                    )
+
                         }
                 ) { err -> Timber.e(err) }
     }

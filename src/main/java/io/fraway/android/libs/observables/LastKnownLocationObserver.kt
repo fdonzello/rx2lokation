@@ -15,11 +15,11 @@ import io.reactivex.ObservableEmitter
 /**
  * @author Francesco Donzello <francesco.donzello@gmail.com>
  */
-class LastKnownLocationObserver(private var activity: Activity) : BaseObservable<RichLocation>() {
+class LastKnownLocationObserver(private val activity: Activity) : BaseObservable<RichLocation>() {
 
     @SuppressLint("MissingPermission")
     override fun run(e: ObservableEmitter<RichLocation>) {
-        Handler(Looper.getMainLooper()).post({
+        Handler(Looper.getMainLooper()).post {
             // need permission checks
             RxPermissions(activity)
                     .request(Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -27,14 +27,18 @@ class LastKnownLocationObserver(private var activity: Activity) : BaseObservable
                         if (granted) {
                             start(e)
                         } else {
-                            e.onError(SecurityException("Permission has not been granted."))
+                            if (!e.isDisposed) {
+                                e.onError(SecurityException("Permission has not been granted."))
+                            }
                         }
                     },
                             {
-                                e.onError(SecurityException("Permission has not been granted."))
+                                if (!e.isDisposed) {
+                                    e.onError(SecurityException("Permission has not been granted."))
+                                }
                             }
                     )
-        })
+        }
 
     }
 
@@ -42,35 +46,43 @@ class LastKnownLocationObserver(private var activity: Activity) : BaseObservable
     private fun start(e: ObservableEmitter<RichLocation>) {
         val geocoder = Geocoder(activity)
         FusedLocationProviderClient(activity).lastLocation
-                .addOnSuccessListener({ location ->
+                .addOnSuccessListener { location ->
 
                     if (e.isDisposed) {
                         return@addOnSuccessListener
                     }
 
                     if (location != null) {
-                        val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                        if (results.isNotEmpty()) {
-                            e.onNext(RichLocation.fromAddress(results[0]))
-                            return@addOnSuccessListener
+                        try {
+                            val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            if (results.isNotEmpty()) {
+                                e.onNext(RichLocation.fromAddress(results[0]))
+                                return@addOnSuccessListener
+                            }
+
+                            e.onNext(RichLocation(
+                                    location.latitude,
+                                    location.longitude,
+                                    "",
+                                    "",
+                                    null,
+                                    null,
+                                    null
+                            ))
+                            e.onComplete()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
 
-
-                        e.onNext(RichLocation(
-                                location.latitude,
-                                location.longitude,
-                                "",
-                                "",
-                                null,
-                                null
-                        ))
                     } else {
                         e.onError(NullLocationException())
                     }
-                })
-                .addOnFailureListener({ error ->
-                    e.onError(error)
-                })
+                }
+                .addOnFailureListener { error ->
+                    if (!e.isDisposed) {
+                        e.onError(error)
+                    }
+                }
                 .addOnCompleteListener {
                     e.onComplete()
                 }

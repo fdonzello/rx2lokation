@@ -29,14 +29,13 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     // android
     implementation "com.android.support:design:${rootProject.ext.supportLibraryVersion}"
     implementation "com.android.support:appcompat-v7:${rootProject.ext.supportLibraryVersion}"
 
     // google
-    api "com.google.android.gms:play-services-location:${rootProject.ext.playLibraryVersion}"
+    implementation "com.google.android.gms:play-services-location:${rootProject.ext.playLibraryVersion}"
     implementation "com.google.android.gms:play-services-places:${rootProject.ext.playLibraryVersion}"
 
     // rx
@@ -49,8 +48,8 @@ dependencies {
     implementation 'com.jakewharton.timber:timber:4.7.0'
 
     // test
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+//    testImplementation 'junit:junit:4.12'
+//    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+//    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }

@@ -1,22 +1,28 @@
 package io.fraway.android.libs.observables
 
+import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
+import android.app.Activity
+import android.location.Geocoder
+import android.os.Handler
+import android.os.Looper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
+import com.tbruyelle.rxpermissions2.RxPermissions
 import io.fraway.android.libs.models.RichLocation
 import io.reactivex.ObservableEmitter
+import timber.log.Timber
 
 /**
  * @author Francesco Donzello <francesco.donzello@gmail.com>
  */
-class LocationUpdatesObserver(ctx: Context, private var request: LocationRequest) : BaseObservable<List<RichLocation>>() {
+class LocationUpdatesObserver(private val activity: Activity, private var request: LocationRequest) : BaseObservable<List<RichLocation>>() {
 
-    private var client: FusedLocationProviderClient = FusedLocationProviderClient(ctx)
+    private var client: FusedLocationProviderClient = FusedLocationProviderClient(activity)
 
-    class MyCallback(private var e: ObservableEmitter<List<RichLocation>>) : LocationCallback() {
+    class MyCallback(private var e: ObservableEmitter<List<RichLocation>>, private val activity: Activity) : LocationCallback() {
         override fun onLocationResult(result: LocationResult?) {
             if (e.isDisposed) {
                 return
@@ -28,9 +34,26 @@ class LocationUpdatesObserver(ctx: Context, private var request: LocationRequest
                 }
 
                 val richLocations: ArrayList<RichLocation> = ArrayList()
-                it.locations.mapTo(richLocations) {
-                    RichLocation(it.latitude, it.longitude, "", "", null, null)
+//                it.locations.mapTo(richLocations) {
+//                    RichLocation(it.latitude, it.longitude, "", "", null, null)
+//                }
+
+                val geocoder = Geocoder(activity)
+
+                try {
+                    val location = it.locations.first()
+                    val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                    if (results.isNotEmpty()) {
+                        e.onNext(arrayListOf(RichLocation.fromAddress(results[0])))
+                        return
+                    }
+
+                    e.onNext(arrayListOf(RichLocation(location.latitude, location.longitude, "", "", null, null, null)))
+                    e.onComplete()
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
+
 
                 e.onNext(richLocations)
             }
@@ -42,9 +65,30 @@ class LocationUpdatesObserver(ctx: Context, private var request: LocationRequest
 
     @SuppressLint("MissingPermission")
     override fun run(e: ObservableEmitter<List<RichLocation>>) {
-        this.callback = MyCallback(e)
+        this.callback = MyCallback(e, activity)
 
-        client.requestLocationUpdates(request, callback, null)
+        Handler(Looper.getMainLooper()).post {
+            // need permission checks
+            RxPermissions(activity)
+                    .request(Manifest.permission.ACCESS_FINE_LOCATION)
+                    .subscribe({ granted ->
+                        if (granted) {
+                            Timber.v("requesting location updates")
+                            client.requestLocationUpdates(request, callback, null)
+                        } else {
+                            if (!e.isDisposed) {
+                                e.onError(SecurityException("Permission has not been granted."))
+                            }
+                        }
+                    },
+                            {
+                                if (!e.isDisposed) {
+                                    e.onError(SecurityException("Permission has not been granted."))
+                                }
+                            }
+                    )
+        }
+
     }
 
 }

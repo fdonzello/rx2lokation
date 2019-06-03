@@ -7,8 +7,6 @@ package io.fraway.android.libs.widgets
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.support.design.widget.TextInputLayout
-import android.support.v7.widget.AppCompatAutoCompleteTextView
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +15,8 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import androidx.appcompat.widget.AppCompatAutoCompleteTextView
+import com.google.android.material.textfield.TextInputLayout
 import com.jakewharton.rxbinding2.widget.RxTextView
 import io.fraway.android.libs.RxLocationProvider
 import io.fraway.android.libs.models.RichLocation

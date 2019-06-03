@@ -3,8 +3,8 @@ package io.fraway.android.libs
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.arch.lifecycle.LifecycleObserver
-import android.support.annotation.RequiresPermission
+import androidx.annotation.RequiresPermission
+import androidx.lifecycle.LifecycleObserver
 import com.google.android.gms.location.LocationRequest
 import io.fraway.android.libs.models.RichLocation
 import io.fraway.android.libs.observables.LastKnownLocationObserver

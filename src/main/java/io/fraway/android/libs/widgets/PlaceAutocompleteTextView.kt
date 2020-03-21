@@ -4,6 +4,7 @@ package io.fraway.android.libs.widgets
  * @author Francesco Donzello <francesco.donzello@gmail.com>
  */
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -16,6 +17,9 @@ import android.view.inputmethod.InputConnection
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.AutocompleteSessionToken
+import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.material.textfield.TextInputLayout
 import com.jakewharton.rxbinding2.widget.RxTextView
 import io.fraway.android.libs.RxLocationProvider
@@ -35,21 +39,23 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
         fun onPlaceChosen(richLocation: RichLocation)
     }
 
-    constructor(context: Context?) : super(context) {
+    constructor(context: Context) : super(context) {
         init()
     }
 
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs) {
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init()
     }
 
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
         init()
     }
 
     private lateinit var rxLocationProvider: RxLocationProvider
 
     lateinit var selectedLocation: RichLocation
+    private lateinit var client: PlacesClient
+    private lateinit var token: AutocompleteSessionToken
 
     private var lastLocations: List<RichLocation>? = null
 
@@ -61,6 +67,10 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
         skipAutocomplete = true
         setText(text)
         clearFocus()
+    }
+
+    fun setToken(t: AutocompleteSessionToken) {
+        this.token = t
     }
 
     private fun getActivityLoopingOnContext(): Activity? {
@@ -76,25 +86,31 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
 
     private var subscriber: Disposable? = null
 
+    @SuppressLint("MissingPermission")
     private fun init() {
         this.rxLocationProvider = RxLocationProvider(activity = getActivityLoopingOnContext()!!)
 
-        setOnItemClickListener({ adapterView, _, i, _ ->
+        with(context.applicationContext) {
+            client = Places.createClient(this)
+        }
+
+
+        setOnItemClickListener { adapterView, _, i, _ ->
             selectedLocation = adapterView.getItemAtPosition(i) as RichLocation
             listener?.onPlaceChosen(selectedLocation)
-        })
+        }
 
         subscriber = RxTextView.afterTextChangeEvents(this)
                 .observeOn(AndroidSchedulers.mainThread())
                 .map { e -> e.editable()!!.toString() }
                 .skip(1)
-                .filter({ text ->
+                .filter { text ->
                     if (skipAutocomplete) {
                         skipAutocomplete = false
                         return@filter false
                     }
 
-                    Timber.i("filtering %s", text)
+                    Timber.i("filtering $text")
                     with(lastLocations) {
                         if (this == null || this.isEmpty()) {
                             return@filter true
@@ -109,33 +125,36 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
                         true
                     }
 
-                })
+                }
                 .distinctUntilChanged()
                 .debounce(200, TimeUnit.MILLISECONDS)
+                .filter { it -> it.isNotEmpty() }
+                .map { it ->
+                    Timber.v("running geocoder: %s", it)
+                    it
+                }
+                .switchMap { query ->
+                    rxLocationProvider
+                            .autocompletePlace(client, query, this.token)
+                }
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        { query ->
-
-                            rxLocationProvider
-                                    .autocompletePlace(query)
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .subscribe(
-                                            { locations ->
-
-                                                this.lastLocations = locations
-                                                setAdapter(LocationSuggestionAdapter(
-                                                        context,
-                                                        android.R.layout.simple_list_item_1,
-                                                        locations.toMutableList()
-                                                ))
-                                                showDropDown()
-                                            },
-                                            {
-                                                it.printStackTrace()
-                                            }
-                                    )
-
+                        { locations ->
+                            Timber.v("got %d locations", locations.count())
+                            this.lastLocations = locations
+                            setAdapter(LocationSuggestionAdapter(
+                                    context,
+                                    android.R.layout.simple_list_item_1,
+                                    locations.toMutableList()
+                            ))
+                            showDropDown()
+                        },
+                        {
+                            it.printStackTrace()
                         }
-                ) { err -> Timber.e(err) }
+                )
+
+
     }
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
@@ -157,10 +176,10 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
         subscriber?.dispose()
     }
 
-    class LocationSuggestionAdapter(context: Context?, resource: Int, objects: MutableList<RichLocation>?)
+    class LocationSuggestionAdapter(context: Context, resource: Int, objects: MutableList<RichLocation>)
         : ArrayAdapter<RichLocation>(context, android.R.layout.simple_list_item_1, objects) {
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             var view: View? = convertView
 
             if (view == null) {
@@ -168,7 +187,7 @@ class PlaceAutocompleteTextView : AppCompatAutoCompleteTextView {
             }
 
             val text: TextView? = view?.findViewById(android.R.id.text1)
-            text?.text = getItem(position).address
+            text?.text = getItem(position)?.address
 
             return view!!
         }

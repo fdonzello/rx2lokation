@@ -42,32 +42,36 @@ class LastKnownLocationObserver(private var activity: Activity) : BaseObservable
     private fun start(e: ObservableEmitter<RichLocation>) {
         val geocoder = Geocoder(activity)
         FusedLocationProviderClient(activity).lastLocation
-                .addOnSuccessListener({ location ->
+                .addOnSuccessListener { location ->
 
                     if (e.isDisposed) {
                         return@addOnSuccessListener
                     }
 
                     if (location != null) {
-                        val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                        if (results.isNotEmpty()) {
-                            e.onNext(RichLocation.fromAddress(results[0]))
-                            return@addOnSuccessListener
+                        try {
+                            val results = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            if (results.isNotEmpty()) {
+                                e.onNext(RichLocation.fromAddress(results[0]))
+                                return@addOnSuccessListener
+                            }
+
+
+                            e.onNext(RichLocation(
+                                    location.latitude,
+                                    location.longitude,
+                                    "",
+                                    "",
+                                    null,
+                                    null
+                            ))
+                        } catch (e: Exception) {
                         }
 
-
-                        e.onNext(RichLocation(
-                                location.latitude,
-                                location.longitude,
-                                "",
-                                "",
-                                null,
-                                null
-                        ))
                     } else {
                         e.onError(NullLocationException())
                     }
-                })
+                }
                 .addOnFailureListener({ error ->
                     e.onError(error)
                 })

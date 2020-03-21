@@ -5,7 +5,7 @@ import android.location.Address
 /**
  * @author Francesco Donzello <francesco.donzello@gmail.com>
  */
-data class RichLocation(val lat: Double, val lng: Double, val address: String?, val city: String?, val postalCode: String?, val countryCode: String?) {
+data class RichLocation(var lat: Double, var lng: Double, val address: String?, val city: String?, val postalCode: String?, val countryCode: String?) {
 
     companion object {
         fun fromAddress(address: Address): RichLocation {
